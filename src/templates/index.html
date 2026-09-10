@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Facial Recognition Attendance System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <nav class="bg-white shadow px-6 py-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold">FaceAttend</h1>
+    </div>
+  </nav>
+
+  <main class="flex-1 container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto text-center mb-12 pt-8">
+      <h1 class="text-4xl font-bold mb-4">Facial Recognition Attendance System</h1>
+      <p class="text-lg text-gray-600">Register your face and mark attendance with our advanced facial recognition technology</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 mt-8">
+
+      <div class="border rounded-2xl shadow p-6 flex flex-col justify-between">
+        <div>
+          <div class="mb-4 text-blue-600 text-4xl">👤</div>
+          <h3 class="text-xl font-semibold">Register Face</h3>
+          <p class="text-gray-600 mt-2">Register your face in the system</p>
+        </div>
+        <div class="mt-6">
+          <a href="{{ url_for('register') }}">
+            <button class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Register Now</button>
+          </a>
+        </div>
+      </div>
+
+      <div class="border rounded-2xl shadow p-6 flex flex-col justify-between">
+        <div>
+          <div class="mb-4 text-green-600 text-4xl">📷</div>
+          <h3 class="text-xl font-semibold">Live Feed</h3>
+          <p class="text-gray-600 mt-2">View real-time face recognition</p>
+        </div>
+        <div class="mt-6">
+          <img src="{{ url_for('video_feed') }}" alt="Live Feed" class="rounded-lg border w-full">
+          <button onclick="startCamera()" class="mt-4 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">Start Camera</button>
+          <button onclick="stopCamera()" class="mt-4 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700">Stop Camera</button> </div>
+      </div>
+
+      <div class="border rounded-2xl shadow p-6 flex flex-col justify-between">
+        <div>
+          <div class="mb-4 text-purple-600 text-4xl">📊</div>
+          <h3 class="text-xl font-semibold">Attendance</h3>
+          <p class="text-gray-600 mt-2">Check today's attendance</p>
+        </div>
+        <div class="mt-6">
+          <button onclick="loadAttendance()" class="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700">View Attendance</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-12 text-center">
+      <h2 class="text-2xl font-bold mb-4">Today's Attendance</h2>
+      <table id="attendance-table" class="mx-auto w-full max-w-2xl border text-left mt-4">
+        <thead class="bg-gray-100">
+          <tr><th class="p-2">Name</th><th class="p-2">Status</th></tr>
+        </thead>
+        <tbody class="bg-white text-gray-700">
+          </tbody>
+      </table>
+    </div>
+
+    <div class="mt-16 text-center">
+      <h2 class="text-3xl font-bold mb-8">How It Works</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div>
+          <div class="text-2xl font-bold mb-2">1</div>
+          <h3 class="text-xl font-semibold mb-2">Register Your Face</h3>
+          <p class="text-gray-600">Create your profile and register your facial data</p>
+        </div>
+        <div>
+          <div class="text-2xl font-bold mb-2">2</div>
+          <h3 class="text-xl font-semibold mb-2">Live Camera Matching</h3>
+          <p class="text-gray-600">System compares your face with the registered data</p>
+        </div>
+        <div>
+          <div class="text-2xl font-bold mb-2">3</div>
+          <h3 class="text-xl font-semibold mb-2">Mark Attendance</h3>
+          <p class="text-gray-600">Your attendance is marked automatically</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-gray-100 py-4 text-center">
+    <p class="text-gray-500">By Venu and Dinesh</p>
+  </footer>
+
+  <script>
+    async function loadAttendance() {
+      try {
+        const res = await fetch('/attendance');
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+        const tbody = document.querySelector('#attendance-table tbody');
+        tbody.innerHTML = ''; // Clear previous entries
+        // *** CORRECTED LOOP ***
+        for (const [name, personData] of Object.entries(data)) {
+          // Check if personData has the status property before accessing it
+          const statusDisplay = personData && personData.status ? personData.status : 'N/A';
+          tbody.innerHTML += `<tr><td class="p-2">${name}</td><td class="p-2">${statusDisplay}</td></tr>`;
+        }
+      } catch (error) {
+        console.error('Failed to load attendance:', error);
+        const tbody = document.querySelector('#attendance-table tbody');
+        tbody.innerHTML = '<tr><td colspan="2" class="p-2 text-red-600">Error loading attendance data.</td></tr>';
+      }
+    }
+
+    function startCamera() {
+      fetch('/start_camera', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Camera started:', data);
+            // Reload the image source to start showing the feed
+            const img = document.querySelector('img[alt="Live Feed"]');
+            img.src = "{{ url_for('video_feed') }}?" + new Date().getTime(); // Add timestamp to force reload
+        })
+        .catch(err => console.error('Failed to start camera:', err));
+    }
+
+    function stopCamera() {
+      fetch('/stop_camera', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Camera stopped:', data);
+            // Optionally clear the image source or show a static image
+            const img = document.querySelector('img[alt="Live Feed"]');
+            img.src = ""; // Clear the image source
+        })
+        .catch(err => console.error('Failed to stop camera:', err));
+    }
+
+    // Load attendance when the page loads
+    window.addEventListener('DOMContentLoaded', () => {
+        loadAttendance();
+        // Optional: Automatically start camera on load
+        // startCamera();
+    });
+  </script>
+
+</body>
+</html>
